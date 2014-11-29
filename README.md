@@ -19,10 +19,7 @@ Table of Contents
 - `predict' Usage
 - Examples
 - Library Usage
-- Building Windows Binaries
 - Additional Information
-- MATLAB/OCTAVE interface
-- PYTHON interface
 
 When to use LIBLINEAR but not LIBSVM
 ====================================
@@ -72,25 +69,22 @@ To obtain good performances, sometimes one needs to scale the
 data. Please check the program `svm-scale' of LIBSVM. For large and
 sparse data, use `-l 0' to keep the sparsity.
 
-Installation
-============
+Build
+=====
 
-On Unix systems, type `make' to build the `train' and `predict'
-programs. Run them without arguments to show the usages.
+  $ mkdir build
+  $ cd build
+  $ cmake ..
+  $ make
 
-On other systems, consult `Makefile' to build them (e.g., see
-'Building Windows binaries' in this file) or use the pre-built
-binaries (Windows binaries are in the directory `windows').
+Unit Tests: Build and Run
+=========================
 
-This software uses some level-1 BLAS subroutines. The needed functions are
-included in this package.  If a BLAS library is available on your
-machine, you may use it by modifying the Makefile: Unmark the following line
-
-        #LIBS ?= -lblas
-
-and mark
-
-        LIBS ?= blas/blas.a
+  $ mkdir build
+  $ cd build
+  $ cmake -Dtest=ON ..
+  $ make
+  $ ./test/liblinear_test
 
 `train' Usage
 =============
@@ -514,37 +508,6 @@ Library Usage
         set_print_string_function(NULL); 
     for default printing to stdout.
 
-Building Windows Binaries
-=========================
-
-Windows binaries are in the directory `windows'. To build them via
-Visual C++, use the following steps:
-
-1. Open a dos command box and change to liblinear directory. If
-environment variables of VC++ have not been set, type
-
-"C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
-
-You may have to modify the above command according which version of
-VC++ or where it is installed.
-
-2. Type
-
-nmake -f Makefile.win clean all
-
-2. (Optional) To build 64-bit windows binaries, you must
-	(1) Setup vcvars64.bat instead of vcvars32.bat
-	(2) Change CFLAGS in Makefile.win: /D _WIN32 to /D _WIN64
-
-MATLAB/OCTAVE Interface
-=======================
-
-Please check the file README in the directory `matlab'.
-
-PYTHON Interface
-================
-
-Please check the file README in the directory `python'.
 
 Additional Information
 ======================
