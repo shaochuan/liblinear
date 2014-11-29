@@ -72,19 +72,19 @@ sparse data, use `-l 0' to keep the sparsity.
 Build
 =====
 
-  $ mkdir build
-  $ cd build
-  $ cmake ..
-  $ make
+    $ mkdir build
+    $ cd build
+    $ cmake ..
+    $ make
 
 Unit Tests: Build and Run
 =========================
 
-  $ mkdir build
-  $ cd build
-  $ cmake -Dtest=ON ..
-  $ make
-  $ ./test/liblinear_test
+    $ mkdir build
+    $ cd build
+    $ cmake -Dtest=ON ..
+    $ make
+    $ ./test/liblinear_test
 
 `train' Usage
 =============
