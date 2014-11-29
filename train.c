@@ -81,7 +81,7 @@ static char* readline(FILE *input)
   return line;
 }
 
-void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name);
+void parse_command_line(int argc, char const *argv[], char *input_file_name, char *model_file_name);
 void read_problem(const char *filename);
 void do_cross_validation();
 
@@ -173,7 +173,7 @@ void do_cross_validation()
   free(target);
 }
 
-void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name)
+void parse_command_line(int argc, char const *argv[], char *input_file_name, char *model_file_name)
 {
   int i;
   void (*print_func)(const char*) = NULL; // default printing to stdout
@@ -259,7 +259,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
     strcpy(model_file_name,argv[i+1]);
   else
   {
-    char *p = strrchr(argv[i],'/');
+    const char *p = strrchr(argv[i],'/');
     if(p==NULL)
       p = argv[i];
     else
