@@ -23,7 +23,7 @@ double dnrm2_(int *n, double *x, int *incx)
   nn = *n;
   iincx = *incx;
 
-  if( nn > 0 && iincx > 0 )
+  if ( nn > 0 && iincx > 0 )
   {
     if (nn == 1)
     {

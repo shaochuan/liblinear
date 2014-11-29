@@ -21,7 +21,7 @@ int daxpy_(int *n, double *sa, double *sx, int *incx, double *sy,
   iincx = *incx;
   iincy = *incy;
 
-  if( nn > 0 && ssa != 0.0 )
+  if ( nn > 0 && ssa != 0.0 )
   {
     if (iincx == 1 && iincy == 1) /* code for both increments equal to 1 */
     {

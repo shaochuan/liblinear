@@ -67,7 +67,7 @@ static char* readline(FILE *input)
 {
   int len;
 
-  if(fgets(line,max_line_len,input) == NULL)
+  if (fgets(line,max_line_len,input) == NULL)
     return NULL;
 
   while(strrchr(line,'\n') == NULL)
@@ -75,7 +75,7 @@ static char* readline(FILE *input)
     max_line_len *= 2;
     line = (char *) realloc(line,max_line_len);
     len = (int) strlen(line);
-    if(fgets(line+len,max_line_len-len,input) == NULL)
+    if (fgets(line+len,max_line_len-len,input) == NULL)
       break;
   }
   return line;
@@ -103,20 +103,20 @@ int main(int argc, char const *argv[])
   read_problem(input_file_name);
   error_msg = check_parameter(&prob,&param);
 
-  if(error_msg)
+  if (error_msg)
   {
     fprintf(stderr,"ERROR: %s\n",error_msg);
     exit(1);
   }
 
-  if(flag_cross_validation)
+  if (flag_cross_validation)
   {
     do_cross_validation();
   }
   else
   {
     model_=train(&prob, &param);
-    if(save_model(model_file_name, model_))
+    if (save_model(model_file_name, model_))
     {
       fprintf(stderr,"can't save model to file %s\n",model_file_name);
       exit(1);
@@ -141,7 +141,7 @@ void do_cross_validation()
   double *target = Malloc(double, prob.l);
 
   cross_validation(&prob,&param,nr_fold,target);
-  if(param.solver_type == L2R_L2LOSS_SVR ||
+  if (param.solver_type == L2R_L2LOSS_SVR ||
      param.solver_type == L2R_L1LOSS_SVR_DUAL ||
      param.solver_type == L2R_L2LOSS_SVR_DUAL)
   {
@@ -165,7 +165,7 @@ void do_cross_validation()
   else
   {
     for(i=0;i<prob.l;i++)
-      if(target[i] == prob.y[i])
+      if (target[i] == prob.y[i])
         ++total_correct;
     printf("Cross Validation Accuracy = %g%%\n",100.0*total_correct/prob.l);
   }
@@ -192,8 +192,8 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
   // parse options
   for(i=1;i<argc;i++)
   {
-    if(argv[i][0] != '-') break;
-    if(++i>=argc)
+    if (argv[i][0] != '-') break;
+    if (++i>=argc)
       exit_with_help();
     switch(argv[i-1][1])
     {
@@ -228,7 +228,7 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
       case 'v':
         flag_cross_validation = 1;
         nr_fold = atoi(argv[i]);
-        if(nr_fold < 2)
+        if (nr_fold < 2)
         {
           fprintf(stderr,"n-fold cross validation: n must >= 2\n");
           exit_with_help();
@@ -250,24 +250,24 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
   set_print_string_function(print_func);
 
   // determine filenames
-  if(i>=argc)
+  if (i>=argc)
     exit_with_help();
 
   strcpy(input_file_name, argv[i]);
 
-  if(i<argc-1)
+  if (i<argc-1)
     strcpy(model_file_name,argv[i+1]);
   else
   {
     const char *p = strrchr(argv[i],'/');
-    if(p==NULL)
+    if (p==NULL)
       p = argv[i];
     else
       ++p;
     sprintf(model_file_name,"%s.model",p);
   }
 
-  if(param.eps == INF)
+  if (param.eps == INF)
   {
     switch(param.solver_type)
     {
@@ -305,7 +305,7 @@ void read_problem(const char *filename)
   char *endptr;
   char *idx, *val, *label;
 
-  if(fp == NULL)
+  if (fp == NULL)
   {
     fprintf(stderr,"can't open input file %s\n",filename);
     exit(1);
@@ -323,7 +323,7 @@ void read_problem(const char *filename)
     while(1)
     {
       p = strtok(NULL," \t");
-      if(p == NULL || *p == '\n') // check '\n' as ' ' may be after the last feature
+      if (p == NULL || *p == '\n') // check '\n' as ' ' may be after the last feature
         break;
       elements++;
     }
@@ -346,11 +346,11 @@ void read_problem(const char *filename)
     readline(fp);
     prob.x[i] = &x_space[j];
     label = strtok(line," \t\n");
-    if(label == NULL) // empty line
+    if (label == NULL) // empty line
       exit_input_error(i+1);
 
     prob.y[i] = strtod(label,&endptr);
-    if(endptr == label || *endptr != '\0')
+    if (endptr == label || *endptr != '\0')
       exit_input_error(i+1);
 
     while(1)
@@ -358,34 +358,34 @@ void read_problem(const char *filename)
       idx = strtok(NULL,":");
       val = strtok(NULL," \t");
 
-      if(val == NULL)
+      if (val == NULL)
         break;
 
       errno = 0;
       x_space[j].index = (int) strtol(idx,&endptr,10);
-      if(endptr == idx || errno != 0 || *endptr != '\0' || x_space[j].index <= inst_max_index)
+      if (endptr == idx || errno != 0 || *endptr != '\0' || x_space[j].index <= inst_max_index)
         exit_input_error(i+1);
       else
         inst_max_index = x_space[j].index;
 
       errno = 0;
       x_space[j].value = strtod(val,&endptr);
-      if(endptr == val || errno != 0 || (*endptr != '\0' && !isspace(*endptr)))
+      if (endptr == val || errno != 0 || (*endptr != '\0' && !isspace(*endptr)))
         exit_input_error(i+1);
 
       ++j;
     }
 
-    if(inst_max_index > max_index)
+    if (inst_max_index > max_index)
       max_index = inst_max_index;
 
-    if(prob.bias >= 0)
+    if (prob.bias >= 0)
       x_space[j++].value = prob.bias;
 
     x_space[j++].index = -1;
   }
 
-  if(prob.bias >= 0)
+  if (prob.bias >= 0)
   {
     prob.n=max_index+1;
     for(i=1;i<prob.l;i++)
