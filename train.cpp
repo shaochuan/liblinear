@@ -70,7 +70,7 @@ static char* readline(FILE *input)
   if (fgets(line,max_line_len,input) == NULL)
     return NULL;
 
-  while(strrchr(line,'\n') == NULL)
+  while (strrchr(line,'\n') == NULL)
   {
     max_line_len *= 2;
     line = (char *) realloc(line,max_line_len);
@@ -145,7 +145,7 @@ void do_cross_validation()
      param.solver_type == L2R_L1LOSS_SVR_DUAL ||
      param.solver_type == L2R_L2LOSS_SVR_DUAL)
   {
-    for(i=0;i<prob.l;i++)
+    for (i=0;i<prob.l;i++)
     {
       double y = prob.y[i];
       double v = target[i];
@@ -164,7 +164,7 @@ void do_cross_validation()
   }
   else
   {
-    for(i=0;i<prob.l;i++)
+    for (i=0;i<prob.l;i++)
       if (target[i] == prob.y[i])
         ++total_correct;
     printf("Cross Validation Accuracy = %g%%\n",100.0*total_correct/prob.l);
@@ -190,7 +190,7 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
   bias = -1;
 
   // parse options
-  for(i=1;i<argc;i++)
+  for (i=1;i<argc;i++)
   {
     if (argv[i][0] != '-') break;
     if (++i>=argc)
@@ -315,12 +315,12 @@ void read_problem(const char *filename)
   elements = 0;
   max_line_len = 1024;
   line = Malloc(char,max_line_len);
-  while(readline(fp)!=NULL)
+  while (readline(fp)!=NULL)
   {
     char *p = strtok(line," \t"); // label
 
     // features
-    while(1)
+    while (1)
     {
       p = strtok(NULL," \t");
       if (p == NULL || *p == '\n') // check '\n' as ' ' may be after the last feature
@@ -340,7 +340,7 @@ void read_problem(const char *filename)
 
   max_index = 0;
   j=0;
-  for(i=0;i<prob.l;i++)
+  for (i=0;i<prob.l;i++)
   {
     inst_max_index = 0; // strtol gives 0 if wrong format
     readline(fp);
@@ -353,7 +353,7 @@ void read_problem(const char *filename)
     if (endptr == label || *endptr != '\0')
       exit_input_error(i+1);
 
-    while(1)
+    while (1)
     {
       idx = strtok(NULL,":");
       val = strtok(NULL," \t");
@@ -388,7 +388,7 @@ void read_problem(const char *filename)
   if (prob.bias >= 0)
   {
     prob.n=max_index+1;
-    for(i=1;i<prob.l;i++)
+    for (i=1;i<prob.l;i++)
       (prob.x[i]-2)->index = prob.n;
     x_space[j-2].index = prob.n;
   }

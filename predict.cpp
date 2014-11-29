@@ -31,7 +31,7 @@ static char* readline(FILE *input)
 	if (fgets(line,max_line_len,input) == NULL)
 		return NULL;
 
-	while(strrchr(line,'\n') == NULL)
+	while (strrchr(line,'\n') == NULL)
 	{
 		max_line_len *= 2;
 		line = (char *) realloc(line,max_line_len);
@@ -72,7 +72,7 @@ void do_predict(FILE *input, FILE *output)
 		get_labels(model_,labels);
 		prob_estimates = (double *) malloc(nr_class*sizeof(double));
 		fprintf(output,"labels");
-		for(j=0;j<nr_class;j++)
+		for (j=0;j<nr_class;j++)
 			fprintf(output," %d",labels[j]);
 		fprintf(output,"\n");
 		free(labels);
@@ -80,7 +80,7 @@ void do_predict(FILE *input, FILE *output)
 
 	max_line_len = 1024;
 	line = (char *)malloc(max_line_len*sizeof(char));
-	while(readline(input) != NULL)
+	while (readline(input) != NULL)
 	{
 		int i = 0;
 		double target_label, predict_label;
@@ -95,7 +95,7 @@ void do_predict(FILE *input, FILE *output)
 		if (endptr == label || *endptr != '\0')
 			exit_input_error(total+1);
 
-		while(1)
+		while (1)
 		{
 			if (i>=max_nr_attr-2)	// need one more for index = -1
 			{
@@ -138,7 +138,7 @@ void do_predict(FILE *input, FILE *output)
 			int j;
 			predict_label = predict_probability(model_,x,prob_estimates);
 			fprintf(output,"%g",predict_label);
-			for(j=0;j<model_->nr_class;j++)
+			for (j=0;j<model_->nr_class;j++)
 				fprintf(output," %g",prob_estimates[j]);
 			fprintf(output,"\n");
 		}
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 	int i;
 
 	// parse options
-	for(i=1;i<argc;i++)
+	for (i=1;i<argc;i++)
 	{
 		if (argv[i][0] != '-') break;
 		++i;
