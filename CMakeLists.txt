@@ -9,8 +9,8 @@ FILE(GLOB BLAS_LIB blas/*.c)
 ADD_LIBRARY(blas ${BLAS_LIB})
 ADD_LIBRARY(linear linear.cpp tron.cpp)
 
-ADD_EXECUTABLE(train train.c)
-ADD_EXECUTABLE(predict predict.c)
+ADD_EXECUTABLE(train train.cpp)
+ADD_EXECUTABLE(predict predict.cpp)
 
 TARGET_LINK_LIBRARIES(train blas linear)
 TARGET_LINK_LIBRARIES(predict blas linear)
