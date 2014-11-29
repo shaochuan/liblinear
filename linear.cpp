@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,14 +7,10 @@
 #include <locale.h>
 #include "linear.h"
 #include "tron.h"
+
+using namespace std;
+
 typedef signed char schar;
-template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
-#ifndef min
-template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
-#endif
-#ifndef max
-template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
-#endif
 template <class S, class T> static inline void clone(T*& dst, S* src, int n)
 {
   dst = new T[n];

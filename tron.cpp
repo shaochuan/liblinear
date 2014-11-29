@@ -1,16 +1,11 @@
+#include <algorithm>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include "tron.h"
 
-#ifndef min
-template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
-#endif
-
-#ifndef max
-template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
-#endif
+using namespace std;
 
 #ifdef __cplusplus
 extern "C" {
