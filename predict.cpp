@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include "linear.h"
+#include <proto/model.pb.h>
 
 int print_null(const char *s,...) {return 0;}
 

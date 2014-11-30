@@ -2,12 +2,18 @@ PROJECT(liblinear)
 CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
 SET(CMAKE_CXX_FLAGS "-g -Wall -Werror -std=c++11 -stdlib=libc++")
 
-option(test "Build all tests." OFF)
+OPTION(test "Build all tests." OFF)
+
+ADD_SUBDIRECTORY(proto)
 
 FILE(GLOB BLAS_LIB blas/*.c)
 
 ADD_LIBRARY(blas ${BLAS_LIB})
+
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 ADD_LIBRARY(linear linear.cpp tron.cpp)
+
+TARGET_LINK_LIBRARIES(linear model ${PROTOBUF_LIBRARY})
 
 ADD_EXECUTABLE(train train.cpp)
 ADD_EXECUTABLE(predict predict.cpp)

@@ -1,0 +1,52 @@
+package svm.model;
+
+//message FeatureNode {
+//  required uint64 index = 1;
+//  required double value = 2;
+//}
+
+//message Feature {
+//  repeated FeatureNode features = 1;
+//}
+
+//message Problem {
+//  required uint64 num_data = 1;
+//  required uint64 num_features = 2;
+//  repeated double labels = 3;
+//  repeated Feature features = 4;
+//  optional double bias = 5;
+//}
+
+enum SolverType {
+  L2R_LR = 0;
+  L2R_L2LOSS_SVC_DUAL = 1;
+  L2R_L2LOSS_SVC = 2;
+  L2R_L1LOSS_SVC_DUAL = 3;
+  MCSVM_CS = 4;
+  L1R_L2LOSS_SVC = 5;
+  L1R_LR = 6;
+  L2R_LR_DUAL = 7;
+  L2R_L2LOSS_SVR = 11;
+  L2R_L2LOSS_SVR_DUAL = 12;
+  L2R_L1LOSS_SVR_DUAL = 13;
+}
+
+message SolverContext {
+  required SolverType solver_type = 1;
+
+  optional double eps = 2;
+  optional double c = 3;
+  optional int64 nr_weight = 4;
+  repeated int64 weight_label = 5;
+  repeated double weight = 6;
+  optional double p = 7;
+}
+
+message Model {
+  required SolverContext context = 1;
+  required uint64 num_classes = 2;
+  required uint64 num_features = 3;
+  repeated double w = 4;
+  repeated int32 label = 5;
+  optional double bias = 6 [default=0.0];
+}

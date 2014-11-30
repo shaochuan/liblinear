@@ -31,4 +31,5 @@ private:
   void info(const char *fmt,...);
   void (*tron_print_string)(const char *buf);
 };
+
 #endif
