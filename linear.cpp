@@ -26,7 +26,7 @@ static void print_string_stdout(const char *s)
 
 static void (*liblinear_print_string) (const char *) = &print_string_stdout;
 
-#if 1
+#if DEBUG
 static void info(const char *fmt,...)
 {
   char buf[BUFSIZ];
