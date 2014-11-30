@@ -1,3 +1,5 @@
+#include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -13,7 +15,7 @@ static int (*info)(const char *fmt,...) = &printf;
 struct feature_node *x;
 int max_nr_attr = 64;
 
-struct model* model_;
+svm::model::Model model_;
 int flag_predict_probability=0;
 
 void exit_input_error(int line_num)
@@ -50,33 +52,28 @@ void do_predict(FILE *input, FILE *output)
 	double error = 0;
 	double sump = 0, sumt = 0, sumpp = 0, sumtt = 0, sumpt = 0;
 
-	int nr_class=get_nr_class(model_);
+	int nr_class = model_.num_classes();
 	double *prob_estimates=NULL;
 	int j, n;
-	int nr_feature=get_nr_feature(model_);
-	if (model_->bias>=0)
-		n=nr_feature+1;
+	int nr_feature = model_.num_features();
+	if (model_.bias() >= 0)
+		n = nr_feature + 1;
 	else
-		n=nr_feature;
+		n = nr_feature;
 
 	if (flag_predict_probability)
 	{
-		int *labels;
-
 		if (!check_probability_model(model_))
 		{
 			fprintf(stderr, "probability output is only supported for logistic regression\n");
 			exit(1);
 		}
 
-		labels=(int *) malloc(nr_class*sizeof(int));
-		get_labels(model_,labels);
-		prob_estimates = (double *) malloc(nr_class*sizeof(double));
-		fprintf(output,"labels");
+		prob_estimates = (double *) malloc(nr_class * sizeof(double));
+		fprintf(output, "labels");
 		for (j=0;j<nr_class;j++)
-			fprintf(output," %d",labels[j]);
-		fprintf(output,"\n");
-		free(labels);
+			fprintf(output, " %d", model_.label(j));
+		fprintf(output, "\n");
 	}
 
 	max_line_len = 1024;
@@ -126,10 +123,10 @@ void do_predict(FILE *input, FILE *output)
 				++i;
 		}
 
-		if (model_->bias>=0)
+		if (model_.bias() >= 0)
 		{
 			x[i].index = n;
-			x[i].value = model_->bias;
+			x[i].value = model_.bias();
 			i++;
 		}
 		x[i].index = -1;
@@ -137,16 +134,16 @@ void do_predict(FILE *input, FILE *output)
 		if (flag_predict_probability)
 		{
 			int j;
-			predict_label = predict_probability(model_,x,prob_estimates);
+			predict_label = predict_probability(model_, x, prob_estimates);
 			fprintf(output,"%g",predict_label);
-			for (j=0;j<model_->nr_class;j++)
+			for (j=0; j < model_.num_classes(); j++)
 				fprintf(output," %g",prob_estimates[j]);
 			fprintf(output,"\n");
 		}
 		else
 		{
-			predict_label = predict(model_,x);
-			fprintf(output,"%g\n",predict_label);
+			predict_label = predict(model_, x);
+			fprintf(output, "%g\n", predict_label);
 		}
 
 		if (predict_label == target_label)
@@ -226,15 +223,14 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if ((model_=load_model(argv[i+1]))==0)
-	{
-		fprintf(stderr,"can't open model file %s\n",argv[i+1]);
-		exit(1);
-	}
+    std::fstream modelf(argv[i+1], std::ios::in | std::ios::binary);
+    if (!model_.ParseFromIstream(&modelf)) {
+      std::cerr << "can't open model file " << argv[i+1] << std::endl;
+      exit(1);
+    }
 
 	x = (struct feature_node *) malloc(max_nr_attr*sizeof(struct feature_node));
 	do_predict(input, output);
-	free_and_destroy_model(&model_);
 	free(line);
 	free(x);
 	fclose(input);

@@ -1,3 +1,6 @@
+#include <unordered_map>
+#include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -87,9 +90,9 @@ void read_problem(const char *filename);
 void do_cross_validation();
 
 struct feature_node *x_space;
-struct parameter param;
+svm::model::SolverContext context;
 struct problem prob;
-struct model* model_;
+svm::model::Model* model_;
 int flag_cross_validation;
 int nr_fold;
 double bias;
@@ -98,17 +101,17 @@ int main(int argc, char const *argv[])
 {
   char input_file_name[1024];
   char model_file_name[1024];
-  const char *error_msg;
+  // const char *error_msg;
 
   parse_command_line(argc, argv, input_file_name, model_file_name);
   read_problem(input_file_name);
-  error_msg = check_parameter(&prob,&param);
+  // error_msg = check_parameter(&prob,&param);
 
-  if (error_msg)
-  {
-    fprintf(stderr,"ERROR: %s\n",error_msg);
-    exit(1);
-  }
+  // if (error_msg)
+  // {
+  //   fprintf(stderr,"ERROR: %s\n",error_msg);
+  //   exit(1);
+  // }
 
   if (flag_cross_validation)
   {
@@ -116,15 +119,13 @@ int main(int argc, char const *argv[])
   }
   else
   {
-    model_=train(&prob, &param);
-    if (save_model(model_file_name, model_))
-    {
-      fprintf(stderr,"can't save model to file %s\n",model_file_name);
+    model_ = train(&prob, context);
+      std::fstream output(model_file_name, std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!model_->SerializeToOstream(&output)) {
+      std::cerr << "can't save model to file " << model_file_name << std::endl;
       exit(1);
     }
-    free_and_destroy_model(&model_);
   }
-  destroy_param(&param);
   free(prob.y);
   free(prob.x);
   free(x_space);
@@ -141,10 +142,10 @@ void do_cross_validation()
   double sumv = 0, sumy = 0, sumvv = 0, sumyy = 0, sumvy = 0;
   double *target = Malloc(double, prob.l);
 
-  cross_validation(&prob,&param,nr_fold,target);
-  if (param.solver_type == L2R_L2LOSS_SVR ||
-     param.solver_type == L2R_L1LOSS_SVR_DUAL ||
-     param.solver_type == L2R_L2LOSS_SVR_DUAL)
+  cross_validation(&prob, context, nr_fold, target);
+  if (context.solver_type() == svm::model::L2R_L2LOSS_SVR ||
+     context.solver_type() == svm::model::L2R_L1LOSS_SVR_DUAL ||
+     context.solver_type() == svm::model::L2R_L2LOSS_SVR_DUAL)
   {
     for (i=0;i<prob.l;i++)
     {
@@ -179,14 +180,7 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
   int i;
   void (*print_func)(const char*) = NULL; // default printing to stdout
 
-  // default values
-  param.solver_type = L2R_L2LOSS_SVC_DUAL;
-  param.C = 1;
-  param.eps = INF; // see setting below
-  param.p = 0.1;
-  param.nr_weight = 0;
-  param.weight_label = NULL;
-  param.weight = NULL;
+  context.set_eps(INF); // see setting below
   flag_cross_validation = 0;
   bias = -1;
 
@@ -199,19 +193,19 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
     switch(argv[i-1][1])
     {
       case 's':
-        param.solver_type = atoi(argv[i]);
+        context.set_solver_type(svm::model::SolverType(atoi(argv[i])));
         break;
 
       case 'c':
-        param.C = atof(argv[i]);
+        context.set_c(atof(argv[i]));
         break;
 
       case 'p':
-        param.p = atof(argv[i]);
+        context.set_p(atof(argv[i]));
         break;
 
       case 'e':
-        param.eps = atof(argv[i]);
+        context.set_eps(atof(argv[i]));
         break;
 
       case 'B':
@@ -219,11 +213,8 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
         break;
 
       case 'w':
-        ++param.nr_weight;
-        param.weight_label = (int *) realloc(param.weight_label,sizeof(int)*param.nr_weight);
-        param.weight = (double *) realloc(param.weight,sizeof(double)*param.nr_weight);
-        param.weight_label[param.nr_weight-1] = atoi(&argv[i-1][2]);
-        param.weight[param.nr_weight-1] = atof(argv[i]);
+        context.add_weight_label(atoi(&argv[i-1][2]));
+        context.add_weight(atof(argv[i]));
         break;
 
       case 'v':
@@ -268,30 +259,30 @@ void parse_command_line(int argc, char const *argv[], char *input_file_name, cha
     sprintf(model_file_name,"%s.model",p);
   }
 
-  if (param.eps == INF)
+  if (context.eps() == INF)
   {
-    switch(param.solver_type)
+    switch(context.solver_type())
     {
-      case L2R_LR:
-      case L2R_L2LOSS_SVC:
-        param.eps = 0.01;
+      case svm::model::L2R_LR:
+      case svm::model::L2R_L2LOSS_SVC:
+        context.set_eps(0.01);
         break;
-      case L2R_L2LOSS_SVR:
-        param.eps = 0.001;
+      case svm::model::L2R_L2LOSS_SVR:
+        context.set_eps(0.001);
         break;
-      case L2R_L2LOSS_SVC_DUAL:
-      case L2R_L1LOSS_SVC_DUAL:
-      case MCSVM_CS:
-      case L2R_LR_DUAL:
-        param.eps = 0.1;
+      case svm::model::L2R_L2LOSS_SVC_DUAL:
+      case svm::model::L2R_L1LOSS_SVC_DUAL:
+      case svm::model::MCSVM_CS:
+      case svm::model::L2R_LR_DUAL:
+        context.set_eps(0.1);
         break;
-      case L1R_L2LOSS_SVC:
-      case L1R_LR:
-        param.eps = 0.01;
+      case svm::model::L1R_L2LOSS_SVC:
+      case svm::model::L1R_LR:
+        context.set_eps(0.01);
         break;
-      case L2R_L1LOSS_SVR_DUAL:
-      case L2R_L2LOSS_SVR_DUAL:
-        param.eps = 0.1;
+      case svm::model::L2R_L1LOSS_SVR_DUAL:
+      case svm::model::L2R_L2LOSS_SVR_DUAL:
+        context.set_eps(0.1);
         break;
     }
   }

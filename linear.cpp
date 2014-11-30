@@ -773,7 +773,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 
 static void solve_l2r_l1l2_svc(
   const problem *prob, double *w, double eps,
-  double Cp, double Cn, int solver_type)
+  double Cp, double Cn, svm::model::SolverType solver_type)
 {
   int l = prob->l;
   int w_size = prob->n;
@@ -795,7 +795,7 @@ static void solve_l2r_l1l2_svc(
   // default solver_type: L2R_L2LOSS_SVC_DUAL
   double diag[3] = {0.5/Cn, 0, 0.5/Cp};
   double upper_bound[3] = {INF, 0, INF};
-  if (solver_type == L2R_L1LOSS_SVC_DUAL)
+  if (solver_type == svm::model::L2R_L1LOSS_SVC_DUAL)
   {
     diag[0] = 0;
     diag[2] = 0;
@@ -990,14 +990,14 @@ static void solve_l2r_l1l2_svc(
 // To support weights for instances, use GETI(i) (i)
 
 static void solve_l2r_l1l2_svr(
-  const problem *prob, double *w, const parameter *param,
-  int solver_type)
+  const problem *prob, double *w, const svm::model::SolverContext& param,
+  svm::model::SolverType solver_type)
 {
   int l = prob->l;
-  double C = param->C;
-  double p = param->p;
+  double C = param.c();
+  double p = param.p();
   int w_size = prob->n;
-  double eps = param->eps;
+  double eps = param.eps();
   int i, s, iter = 0;
   int max_iter = 1000;
   int active_size = l;
@@ -1016,7 +1016,7 @@ static void solve_l2r_l1l2_svr(
   lambda[0] = 0.5/C;
   upper_bound[0] = INF;
 
-  if (solver_type == L2R_L1LOSS_SVR_DUAL)
+  if (solver_type == svm::model::L2R_L1LOSS_SVR_DUAL)
   {
     lambda[0] = 0;
     upper_bound[0] = C;
@@ -2174,9 +2174,9 @@ static void group_classes(const problem *prob, int *nr_class_ret, int **label_re
   free(data_label);
 }
 
-static void train_one(const problem *prob, const parameter *param, double *w, double Cp, double Cn)
+static void train_one(const problem *prob, const svm::model::SolverContext& param, double *w, double Cp, double Cn)
 {
-  double eps=param->eps;
+  double eps=param.eps();
   int pos = 0;
   int neg = 0;
   for (int i=0;i<prob->l;i++)
@@ -2187,9 +2187,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
   double primal_solver_tol = eps*std::max(std::min(pos,neg), 1)/prob->l;
 
   function *fun_obj=NULL;
-  switch(param->solver_type)
+  switch(param.solver_type())
   {
-    case L2R_LR:
+    case svm::model::L2R_LR:
     {
       double *C = new double[prob->l];
       for (int i = 0; i < prob->l; i++)
@@ -2207,7 +2207,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
       delete[] C;
       break;
     }
-    case L2R_L2LOSS_SVC:
+    case svm::model::L2R_L2LOSS_SVC:
     {
       double *C = new double[prob->l];
       for (int i = 0; i < prob->l; i++)
@@ -2225,13 +2225,13 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
       delete[] C;
       break;
     }
-    case L2R_L2LOSS_SVC_DUAL:
-      solve_l2r_l1l2_svc(prob, w, eps, Cp, Cn, L2R_L2LOSS_SVC_DUAL);
+    case svm::model::L2R_L2LOSS_SVC_DUAL:
+      solve_l2r_l1l2_svc(prob, w, eps, Cp, Cn, svm::model::L2R_L2LOSS_SVC_DUAL);
       break;
-    case L2R_L1LOSS_SVC_DUAL:
-      solve_l2r_l1l2_svc(prob, w, eps, Cp, Cn, L2R_L1LOSS_SVC_DUAL);
+    case svm::model::L2R_L1LOSS_SVC_DUAL:
+      solve_l2r_l1l2_svc(prob, w, eps, Cp, Cn, svm::model::L2R_L1LOSS_SVC_DUAL);
       break;
-    case L1R_L2LOSS_SVC:
+    case svm::model::L1R_L2LOSS_SVC:
     {
       problem prob_col;
       feature_node *x_space = NULL;
@@ -2242,7 +2242,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
       delete [] x_space;
       break;
     }
-    case L1R_LR:
+    case svm::model::L1R_LR:
     {
       problem prob_col;
       feature_node *x_space = NULL;
@@ -2253,17 +2253,17 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
       delete [] x_space;
       break;
     }
-    case L2R_LR_DUAL:
+    case svm::model::L2R_LR_DUAL:
       solve_l2r_lr_dual(prob, w, eps, Cp, Cn);
       break;
-    case L2R_L2LOSS_SVR:
+    case svm::model::L2R_L2LOSS_SVR:
     {
       double *C = new double[prob->l];
       for (int i = 0; i < prob->l; i++)
-        C[i] = param->C;
+        C[i] = param.c();
 
-      fun_obj=new l2r_l2_svr_fun(prob, C, param->p);
-      TRON tron_obj(fun_obj, param->eps);
+      fun_obj=new l2r_l2_svr_fun(prob, C, param.p());
+      TRON tron_obj(fun_obj, param.eps());
       tron_obj.set_print_string(liblinear_print_string);
       tron_obj.tron(w);
       delete fun_obj;
@@ -2271,11 +2271,11 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
       break;
 
     }
-    case L2R_L1LOSS_SVR_DUAL:
-      solve_l2r_l1l2_svr(prob, w, param, L2R_L1LOSS_SVR_DUAL);
+    case svm::model::L2R_L1LOSS_SVR_DUAL:
+      solve_l2r_l1l2_svr(prob, w, param, svm::model::L2R_L1LOSS_SVR_DUAL);
       break;
-    case L2R_L2LOSS_SVR_DUAL:
-      solve_l2r_l1l2_svr(prob, w, param, L2R_L2LOSS_SVR_DUAL);
+    case svm::model::L2R_L2LOSS_SVR_DUAL:
+      solve_l2r_l1l2_svr(prob, w, param, svm::model::L2R_L2LOSS_SVR_DUAL);
       break;
     default:
       fprintf(stderr, "ERROR: unknown solver_type\n");
@@ -2286,27 +2286,27 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 //
 // Interface functions
 //
-model* train(const problem *prob, const parameter *param)
+svm::model::Model* train(const problem *prob, const svm::model::SolverContext& param)
 {
   int i,j;
   int l = prob->l;
   int n = prob->n;
   int w_size = prob->n;
-  model *model_ = Malloc(model,1);
+  auto* model_ = new svm::model::Model;
 
   if (prob->bias>=0)
-    model_->nr_feature=n-1;
+    model_->set_num_features(n-1);
   else
-    model_->nr_feature=n;
-  model_->param = *param;
-  model_->bias = prob->bias;
+    model_->set_num_features(n);
+  model_->mutable_context()->CopyFrom(param);
+  model_->set_bias(prob->bias);
 
-  if (check_regression_model(model_))
+  double* w = Malloc(double, w_size);
+  if (check_regression_model(*model_))
   {
-    model_->w = Malloc(double, w_size);
-    model_->nr_class = 2;
-    model_->label = NULL;
-    train_one(prob, param, &model_->w[0], 0, 0);
+    
+    model_->set_num_classes(2);
+    train_one(prob, param, w, 0, 0);
   }
   else
   {
@@ -2319,24 +2319,23 @@ model* train(const problem *prob, const parameter *param)
     // group training data of the same class
     group_classes(prob,&nr_class,&label,&start,&count,perm);
 
-    model_->nr_class=nr_class;
-    model_->label = Malloc(int,nr_class);
+    model_->set_num_classes(nr_class);
     for (i=0;i<nr_class;i++)
-      model_->label[i] = label[i];
+      model_->add_label(label[i]);
 
     // calculate weighted C
     double *weighted_C = Malloc(double, nr_class);
     for (i=0;i<nr_class;i++)
-      weighted_C[i] = param->C;
-    for (i=0;i<param->nr_weight;i++)
+      weighted_C[i] = param.c();
+    for (i=0;i<param.weight().size();i++)
     {
       for (j=0;j<nr_class;j++)
-        if (param->weight_label[i] == label[j])
+        if (param.weight_label(i) == label[j])
           break;
       if (j == nr_class)
-        fprintf(stderr,"WARNING: class label %d specified in weight is not found\n", param->weight_label[i]);
+        fprintf(stderr,"WARNING: class label %lld specified in weight is not found\n", param.weight_label(i));
       else
-        weighted_C[j] *= param->weight[i];
+        weighted_C[j] *= param.weight(i);
     }
 
     // constructing the subproblem
@@ -2355,21 +2354,18 @@ model* train(const problem *prob, const parameter *param)
       sub_prob.x[k] = x[k];
 
     // multi-class svm by Crammer and Singer
-    if (param->solver_type == MCSVM_CS)
+    if (param.solver_type() == svm::model::MCSVM_CS)
     {
-      model_->w=Malloc(double, n*nr_class);
       for (i=0;i<nr_class;i++)
         for (j=start[i];j<start[i]+count[i];j++)
           sub_prob.y[j] = i;
-      Solver_MCSVM_CS Solver(&sub_prob, nr_class, weighted_C, param->eps);
-      Solver.Solve(model_->w);
+      Solver_MCSVM_CS Solver(&sub_prob, nr_class, weighted_C, param.eps());
+      Solver.Solve(w);
     }
     else
     {
       if (nr_class == 2)
       {
-        model_->w=Malloc(double, w_size);
-
         int e0 = start[0]+count[0];
         k=0;
         for (; k<e0; k++)
@@ -2377,12 +2373,11 @@ model* train(const problem *prob, const parameter *param)
         for (; k<sub_prob.l; k++)
           sub_prob.y[k] = -1;
 
-        train_one(&sub_prob, param, &model_->w[0], weighted_C[0], weighted_C[1]);
+        train_one(&sub_prob, param, w, weighted_C[0], weighted_C[1]);
       }
       else
       {
-        model_->w=Malloc(double, w_size*nr_class);
-        double *w=Malloc(double, w_size);
+        double *wn = Malloc(double, w_size);
         for (i=0;i<nr_class;i++)
         {
           int si = start[i];
@@ -2396,15 +2391,20 @@ model* train(const problem *prob, const parameter *param)
           for (; k<sub_prob.l; k++)
             sub_prob.y[k] = -1;
 
-          train_one(&sub_prob, param, w, weighted_C[i], param->C);
+          train_one(&sub_prob, param, wn, weighted_C[i], param.c());
 
-          for (int j=0;j<w_size;j++)
-            model_->w[j*nr_class+i] = w[j];
+          for (int j=0; j<w_size; j++)
+            model_->set_w(j*nr_class+i, wn[j]);
         }
-        free(w);
+        free(wn);
       }
 
     }
+
+    for (int k=0; k < w_size; k++) {
+      model_->add_w(w[k]);
+    }
+    free(w);
 
     free(x);
     free(label);
@@ -2413,12 +2413,12 @@ model* train(const problem *prob, const parameter *param)
     free(perm);
     free(sub_prob.x);
     free(sub_prob.y);
-    free(weighted_C);
+    // free(weighted_C);
   }
   return model_;
 }
 
-void cross_validation(const problem *prob, const parameter *param, int nr_fold, double *target)
+void cross_validation(const problem *prob, const svm::model::SolverContext& param, int nr_fold, double *target)
 {
   int i;
   int *fold_start;
@@ -2465,10 +2465,9 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
       subprob.y[k] = prob->y[perm[j]];
       ++k;
     }
-    struct model *submodel = train(&subprob,param);
+    auto submodel = train(&subprob, param);
     for (j=begin;j<end;j++)
-      target[perm[j]] = predict(submodel,prob->x[perm[j]]);
-    free_and_destroy_model(&submodel);
+      target[perm[j]] = predict(*submodel,prob->x[perm[j]]);
     free(subprob.x);
     free(subprob.y);
   }
@@ -2476,19 +2475,20 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
   free(perm);
 }
 
-double predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
+double predict_values(const svm::model::Model& model_, const struct feature_node *x, double *dec_values)
 {
   int idx;
   int n;
-  if (model_->bias>=0)
-    n=model_->nr_feature+1;
+  if (model_.bias() >= 0)
+    n = model_.num_features() + 1;
   else
-    n=model_->nr_feature;
-  double *w=model_->w;
-  int nr_class=model_->nr_class;
+    n = model_.num_features();
+  const auto& w = model_.w();
+  int nr_class = model_.num_classes();
   int i;
   int nr_w;
-  if (nr_class==2 && model_->param.solver_type != MCSVM_CS)
+  if (nr_class==2 &&
+      model_.context().solver_type() != svm::model::MCSVM_CS)
     nr_w = 1;
   else
     nr_w = nr_class;
@@ -2501,7 +2501,7 @@ double predict_values(const struct model *model_, const struct feature_node *x, 
     // the dimension of testing data may exceed that of training
     if (idx<=n)
       for (i=0;i<nr_w;i++)
-        dec_values[i] += w[(idx-1)*nr_w+i]*lx->value;
+        dec_values[i] += w.Get((idx-1)*nr_w+i) * lx->value;
   }
 
   if (nr_class==2)
@@ -2509,7 +2509,7 @@ double predict_values(const struct model *model_, const struct feature_node *x, 
     if (check_regression_model(model_))
       return dec_values[0];
     else
-      return (dec_values[0]>0)?model_->label[0]:model_->label[1];
+      return (dec_values[0]>0)? model_.label(0) : model_.label(1);
   }
   else
   {
@@ -2519,31 +2519,31 @@ double predict_values(const struct model *model_, const struct feature_node *x, 
       if (dec_values[i] > dec_values[dec_max_idx])
         dec_max_idx = i;
     }
-    return model_->label[dec_max_idx];
+    return model_.label(dec_max_idx);
   }
 }
 
-double predict(const model *model_, const feature_node *x)
+double predict(const svm::model::Model& model_, const feature_node *x)
 {
-  double *dec_values = Malloc(double, model_->nr_class);
-  double label=predict_values(model_, x, dec_values);
+  double *dec_values = Malloc(double, model_.num_classes());
+  double label = predict_values(model_, x, dec_values);
   free(dec_values);
   return label;
 }
 
-double predict_probability(const struct model *model_, const struct feature_node *x, double* prob_estimates)
+double predict_probability(const svm::model::Model& model_, const struct feature_node *x, double* prob_estimates)
 {
   if (check_probability_model(model_))
   {
     int i;
-    int nr_class=model_->nr_class;
+    int nr_class = model_.num_classes();
     int nr_w;
     if (nr_class==2)
       nr_w = 1;
     else
       nr_w = nr_class;
 
-    double label=predict_values(model_, x, prob_estimates);
+    double label = predict_values(model_, x, prob_estimates);
     for (i=0;i<nr_w;i++)
       prob_estimates[i]=1/(1+exp(-prob_estimates[i]));
 
@@ -2565,309 +2565,45 @@ double predict_probability(const struct model *model_, const struct feature_node
     return 0;
 }
 
-static const char *solver_type_table[]=
+const char *check_parameter(const svm::model::SolverContext& param)
 {
-  "L2R_LR", "L2R_L2LOSS_SVC_DUAL", "L2R_L2LOSS_SVC", "L2R_L1LOSS_SVC_DUAL", "MCSVM_CS",
-  "L1R_L2LOSS_SVC", "L1R_LR", "L2R_LR_DUAL",
-  "", "", "",
-  "L2R_L2LOSS_SVR", "L2R_L2LOSS_SVR_DUAL", "L2R_L1LOSS_SVR_DUAL", NULL
-};
-
-int save_model(const char *model_file_name, const struct model *model_)
-{
-  int i;
-  int nr_feature=model_->nr_feature;
-  int n;
-  const parameter& param = model_->param;
-
-  if (model_->bias>=0)
-    n=nr_feature+1;
-  else
-    n=nr_feature;
-  int w_size = n;
-  FILE *fp = fopen(model_file_name,"w");
-  if (fp==NULL) return -1;
-
-  char *old_locale = strdup(setlocale(LC_ALL, NULL));
-  setlocale(LC_ALL, "C");
-
-  int nr_w;
-  if (model_->nr_class==2 && model_->param.solver_type != MCSVM_CS)
-    nr_w=1;
-  else
-    nr_w=model_->nr_class;
-
-  fprintf(fp, "solver_type %s\n", solver_type_table[param.solver_type]);
-  fprintf(fp, "nr_class %d\n", model_->nr_class);
-
-  if (model_->label)
-  {
-    fprintf(fp, "label");
-    for (i=0; i<model_->nr_class; i++)
-      fprintf(fp, " %d", model_->label[i]);
-    fprintf(fp, "\n");
-  }
-
-  fprintf(fp, "nr_feature %d\n", nr_feature);
-
-  fprintf(fp, "bias %.16g\n", model_->bias);
-
-  fprintf(fp, "w\n");
-  for (i=0; i<w_size; i++)
-  {
-    int j;
-    for (j=0; j<nr_w; j++)
-      fprintf(fp, "%.16g ", model_->w[i*nr_w+j]);
-    fprintf(fp, "\n");
-  }
-
-  setlocale(LC_ALL, old_locale);
-  free(old_locale);
-
-  if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
-  else return 0;
-}
-
-struct model *load_model(const char *model_file_name)
-{
-  FILE *fp = fopen(model_file_name,"r");
-  if (fp==NULL) return NULL;
-
-  int i;
-  int nr_feature;
-  int n;
-  int nr_class;
-  double bias;
-  model *model_ = Malloc(model,1);
-  parameter& param = model_->param;
-
-  model_->label = NULL;
-
-  char *old_locale = strdup(setlocale(LC_ALL, NULL));
-  setlocale(LC_ALL, "C");
-
-  char cmd[81];
-  while (1)
-  {
-    fscanf(fp,"%80s",cmd);
-    if (strcmp(cmd,"solver_type")==0)
-    {
-      fscanf(fp,"%80s",cmd);
-      int i;
-      for (i=0;solver_type_table[i];i++)
-      {
-        if (strcmp(solver_type_table[i],cmd)==0)
-        {
-          param.solver_type=i;
-          break;
-        }
-      }
-      if (solver_type_table[i] == NULL)
-      {
-        fprintf(stderr,"unknown solver type.\n");
-
-        setlocale(LC_ALL, old_locale);
-        free(model_->label);
-        free(model_);
-        free(old_locale);
-        return NULL;
-      }
-    }
-    else if (strcmp(cmd,"nr_class")==0)
-    {
-      fscanf(fp,"%d",&nr_class);
-      model_->nr_class=nr_class;
-    }
-    else if (strcmp(cmd,"nr_feature")==0)
-    {
-      fscanf(fp,"%d",&nr_feature);
-      model_->nr_feature=nr_feature;
-    }
-    else if (strcmp(cmd,"bias")==0)
-    {
-      fscanf(fp,"%lf",&bias);
-      model_->bias=bias;
-    }
-    else if (strcmp(cmd,"w")==0)
-    {
-      break;
-    }
-    else if (strcmp(cmd,"label")==0)
-    {
-      int nr_class = model_->nr_class;
-      model_->label = Malloc(int,nr_class);
-      for (int i=0;i<nr_class;i++)
-        fscanf(fp,"%d",&model_->label[i]);
-    }
-    else
-    {
-      fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
-      setlocale(LC_ALL, old_locale);
-      free(model_->label);
-      free(model_);
-      free(old_locale);
-      return NULL;
-    }
-  }
-
-  nr_feature=model_->nr_feature;
-  if (model_->bias>=0)
-    n=nr_feature+1;
-  else
-    n=nr_feature;
-  int w_size = n;
-  int nr_w;
-  if (nr_class==2 && param.solver_type != MCSVM_CS)
-    nr_w = 1;
-  else
-    nr_w = nr_class;
-
-  model_->w=Malloc(double, w_size*nr_w);
-  for (i=0; i<w_size; i++)
-  {
-    int j;
-    for (j=0; j<nr_w; j++)
-      fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
-    fscanf(fp, "\n");
-  }
-
-  setlocale(LC_ALL, old_locale);
-  free(old_locale);
-
-  if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
-
-  return model_;
-}
-
-int get_nr_feature(const model *model_)
-{
-  return model_->nr_feature;
-}
-
-int get_nr_class(const model *model_)
-{
-  return model_->nr_class;
-}
-
-void get_labels(const model *model_, int* label)
-{
-  if (model_->label != NULL)
-    for (int i=0;i<model_->nr_class;i++)
-      label[i] = model_->label[i];
-}
-
-// use inline here for better performance (around 20% faster than the non-inline one)
-static inline double get_w_value(const struct model *model_, int idx, int label_idx) 
-{
-  int nr_class = model_->nr_class;
-  int solver_type = model_->param.solver_type;
-  const double *w = model_->w;
-
-  if (idx < 0 || idx > model_->nr_feature)
-    return 0;
-  if (check_regression_model(model_))
-    return w[idx];
-  else 
-  {
-    if (label_idx < 0 || label_idx >= nr_class)
-      return 0;
-    if (nr_class == 2 && solver_type != MCSVM_CS)
-    {
-      if (label_idx == 0)
-        return w[idx];
-      else
-        return -w[idx];
-    }
-    else
-      return w[idx*nr_class+label_idx];
-  }
-}
-
-// feat_idx: starting from 1 to nr_feature
-// label_idx: starting from 0 to nr_class-1 for classification models;
-//            for regression models, label_idx is ignored.
-double get_decfun_coef(const struct model *model_, int feat_idx, int label_idx)
-{
-  if (feat_idx > model_->nr_feature)
-    return 0;
-  return get_w_value(model_, feat_idx-1, label_idx);
-}
-
-double get_decfun_bias(const struct model *model_, int label_idx)
-{
-  int bias_idx = model_->nr_feature;
-  double bias = model_->bias;
-  if (bias <= 0)
-    return 0;
-  else
-    return bias*get_w_value(model_, bias_idx, label_idx);
-}
-
-void free_model_content(struct model *model_ptr)
-{
-  if (model_ptr->w != NULL)
-    free(model_ptr->w);
-  if (model_ptr->label != NULL)
-    free(model_ptr->label);
-}
-
-void free_and_destroy_model(struct model **model_ptr_ptr)
-{
-  struct model *model_ptr = *model_ptr_ptr;
-  if (model_ptr != NULL)
-  {
-    free_model_content(model_ptr);
-    free(model_ptr);
-  }
-}
-
-void destroy_param(parameter* param)
-{
-  if (param->weight_label != NULL)
-    free(param->weight_label);
-  if (param->weight != NULL)
-    free(param->weight);
-}
-
-const char *check_parameter(const problem *prob, const parameter *param)
-{
-  if (param->eps <= 0)
+  if (param.eps() <= 0)
     return "eps <= 0";
 
-  if (param->C <= 0)
+  if (param.c() <= 0)
     return "C <= 0";
 
-  if (param->p < 0)
+  if (param.p() < 0)
     return "p < 0";
 
-  if (param->solver_type != L2R_LR
-    && param->solver_type != L2R_L2LOSS_SVC_DUAL
-    && param->solver_type != L2R_L2LOSS_SVC
-    && param->solver_type != L2R_L1LOSS_SVC_DUAL
-    && param->solver_type != MCSVM_CS
-    && param->solver_type != L1R_L2LOSS_SVC
-    && param->solver_type != L1R_LR
-    && param->solver_type != L2R_LR_DUAL
-    && param->solver_type != L2R_L2LOSS_SVR
-    && param->solver_type != L2R_L2LOSS_SVR_DUAL
-    && param->solver_type != L2R_L1LOSS_SVR_DUAL)
+  if (param.solver_type() != svm::model::L2R_LR
+    && param.solver_type() != svm::model::L2R_L2LOSS_SVC_DUAL
+    && param.solver_type() != svm::model::L2R_L2LOSS_SVC
+    && param.solver_type() != svm::model::L2R_L1LOSS_SVC_DUAL
+    && param.solver_type() != svm::model::MCSVM_CS
+    && param.solver_type() != svm::model::L1R_L2LOSS_SVC
+    && param.solver_type() != svm::model::L1R_LR
+    && param.solver_type() != svm::model::L2R_LR_DUAL
+    && param.solver_type() != svm::model::L2R_L2LOSS_SVR
+    && param.solver_type() != svm::model::L2R_L2LOSS_SVR_DUAL
+    && param.solver_type() != svm::model::L2R_L1LOSS_SVR_DUAL)
     return "unknown solver type";
 
   return NULL;
 }
 
-int check_probability_model(const struct model *model_)
+int check_probability_model(const svm::model::Model& model_)
 {
-  return (model_->param.solver_type==L2R_LR ||
-      model_->param.solver_type==L2R_LR_DUAL ||
-      model_->param.solver_type==L1R_LR);
+  return (model_.context().solver_type()==svm::model::L2R_LR ||
+      model_.context().solver_type()==svm::model::L2R_LR_DUAL ||
+      model_.context().solver_type()==svm::model::L1R_LR);
 }
 
-int check_regression_model(const struct model *model_)
+int check_regression_model(const svm::model::Model& model_)
 {
-  return (model_->param.solver_type==L2R_L2LOSS_SVR ||
-      model_->param.solver_type==L2R_L1LOSS_SVR_DUAL ||
-      model_->param.solver_type==L2R_L2LOSS_SVR_DUAL);
+  return (model_.context().solver_type()==svm::model::L2R_L2LOSS_SVR ||
+      model_.context().solver_type()==svm::model::L2R_L1LOSS_SVR_DUAL ||
+      model_.context().solver_type()==svm::model::L2R_L2LOSS_SVR_DUAL);
 }
 
 void set_print_string_function(void (*print_func)(const char*))

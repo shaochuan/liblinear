@@ -32,14 +32,13 @@ enum SolverType {
 }
 
 message SolverContext {
-  required SolverType solver_type = 1;
-
+  optional SolverType solver_type = 1 [default = L2R_L2LOSS_SVC_DUAL];
   optional double eps = 2;
-  optional double c = 3;
-  optional int64 nr_weight = 4;
-  repeated int64 weight_label = 5;
-  repeated double weight = 6;
-  optional double p = 7;
+  optional double c = 3 [default = 1.0];
+//  optional int64 nr_weight = 4 [default = 0];
+  repeated int64 weight_label = 4;
+  repeated double weight = 5;
+  optional double p = 6 [default = 0.1];
 }
 
 message Model {
